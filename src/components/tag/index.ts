@@ -1,8 +1,8 @@
 import { ReactElement, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
-import { Platform } from 'react-native';
 import { CommitParam } from '../../utils/createTrackingHandler';
 import MentionInputContext from '../../context/mentionInputContext';
 import useTrackingHandler from '../../hooks/useTrackingHandler';
+import { Platform } from 'react-native';
 import { Mention, RenderMention } from '../../utils/createMentionsHandler';
 
 export type Commit = (params: Omit<CommitParam, 'text' | 'formatText'>) => void;
@@ -13,7 +13,7 @@ type RenderProps = {
 };
 
 type TagProps = {
-  tag: string;
+  tag: string | RegExp;
   renderText: RenderMention;
   extractString: (mention: Mention) => string;
   renderSuggestions?: (params: RenderProps) => ReactNode;
@@ -45,11 +45,11 @@ export default function Tag(props: TagProps): ReactElement | null {
 
   useEffect(() => {
     mentionsHandler.addRenderer({
-      tag,
+      tag: String(tag),
       renderer: renderText,
     });
     mentionsHandler.addExtractor({
-      tag,
+      tag: String(tag),
       extractor: extractString,
     });
   });
@@ -68,7 +68,7 @@ export default function Tag(props: TagProps): ReactElement | null {
   }, []);
 
   useEffect(() => {
-    trackingHandler.on('commit', result => {
+    trackingHandler.on('commit', (result) => {
       const { text, start, keyword, slicedText, id, name } = result;
       const extractedName = formatText ? formatText(name) : name;
 
@@ -111,7 +111,7 @@ export default function Tag(props: TagProps): ReactElement | null {
         name: extractedName,
         value: name,
         id,
-        tag,
+        tag: String(tag),
       });
 
       mentionsHandler.rerender(text);
@@ -128,7 +128,7 @@ export default function Tag(props: TagProps): ReactElement | null {
       onStopTracking && onStopTracking();
       setTracking(false);
     });
-    trackingHandler.on('keywordChange', keyword => {
+    trackingHandler.on('keywordChange', (keyword) => {
       onKeywordChange && onKeywordChange(keyword);
       setKeyword(keyword);
     });

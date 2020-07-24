@@ -1,6 +1,6 @@
 import { GenericHandler } from './types';
 
-export type TrackingParams = { tag: string };
+export type TrackingParams = { tag: string | RegExp };
 type CommitSub = (commitResult: Commitment) => void;
 type KeywordChangeSub = (keyword: string) => void;
 type TrackingEvents = {
@@ -49,14 +49,28 @@ export default function createTrackingHandler(params: TrackingParams): TrackingH
     trackingQueue = [false, ...trackingQueue];
   };
 
+  const startTracking = (pos: number) => {
+    position = pos;
+    trackingQueue = [true, ...trackingQueue];
+    check();
+  };
+
   const preHandleTrackingState: GenericHandler = ({ text, selection, prevSelection }) => {
     const lastChar = text[selection.start - 1];
     const ranged = prevSelection.start !== prevSelection.end;
     const [tracking] = trackingQueue;
     if (!tracking) {
-      if (lastChar === params.tag) {
-        position = selection.start - 1;
-        trackingQueue = [true, ...trackingQueue];
+      if (typeof params.tag === 'string') {
+        if (lastChar === params.tag) {
+          position = selection.start - 1;
+          trackingQueue = [true, ...trackingQueue];
+        }
+      } else {
+        const match = text.match(params.tag);
+        if (match) {
+          position = match.index ?? -1;
+          trackingQueue = [true, ...trackingQueue];
+        }
       }
     } else {
       if (ranged) stopTracking();
@@ -76,16 +90,19 @@ export default function createTrackingHandler(params: TrackingParams): TrackingH
 
   const updateKeyword: GenericHandler = ({ text }) => {
     if (position !== -1) {
-      const match = /([^\s]+)/.exec(text.substr(position));
+      const match =
+        typeof params.tag === 'string'
+          ? /([^\s]+)/.exec(text.substr(position))
+          : params.tag.exec(text.substr(position));
       if (!match) return;
       keyword = match[0];
-      keywordChangeSubs.forEach(sub => {
-        sub(keyword.split(params.tag)[1]);
+      keywordChangeSubs.forEach((sub) => {
+        sub(keyword.split(params.tag)[1] || keyword);
       });
     }
   };
 
-  const updateTracker: GenericHandler = params => {
+  const updateTracker: GenericHandler = (params) => {
     preHandleTrackingState(params);
     updateKeyword(params);
     postHandleTrackingState(params);
@@ -108,11 +125,11 @@ export default function createTrackingHandler(params: TrackingParams): TrackingH
     trackingQueue = trackingQueue.slice(0, 10);
     const [currentTracking, prevTracking] = trackingQueue;
     if (!prevTracking && currentTracking) {
-      startTrackingSubs.forEach(sub => {
+      startTrackingSubs.forEach((sub) => {
         sub();
       });
     } else if (prevTracking && !currentTracking) {
-      stopTrackingSubs.forEach(sub => {
+      stopTrackingSubs.forEach((sub) => {
         sub();
       });
     }
@@ -138,12 +155,12 @@ export default function createTrackingHandler(params: TrackingParams): TrackingH
     stopTracking();
     check();
 
-    commitSubs.forEach(sub => {
+    commitSubs.forEach((sub) => {
       sub(result);
     });
 
     return result;
   };
 
-  return { updateTracker, on, commit };
+  return { updateTracker, on, commit, startTracking };
 }
