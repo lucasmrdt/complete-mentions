@@ -1,3 +1,5 @@
+import matchAll from 'string.prototype.matchall';
+
 import { GenericHandler } from './types';
 
 export type TrackingParams = { tag: string | RegExp };
@@ -66,7 +68,7 @@ export default function createTrackingHandler(params: TrackingParams): TrackingH
           trackingQueue = [true, ...trackingQueue];
         }
       } else {
-        const match = [...text.matchAll(new RegExp(params.tag, 'gi'))].find(
+        const match = [...matchAll(text, new RegExp(params.tag, 'gi'))].find(
           (match) => match.index + match[0].length === selection.start,
         );
         if (match) {

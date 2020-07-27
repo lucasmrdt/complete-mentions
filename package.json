@@ -31,7 +31,9 @@
     "pretty-quick": "^2.0.0",
     "typescript": "^3.6.4"
   },
-  "dependencies": {},
+  "dependencies": {
+    "string.prototype.matchall": "4.0.2"
+  },
   "peerDependencies": {
     "react": "16.8.0"
   },
