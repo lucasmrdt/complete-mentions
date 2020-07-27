@@ -66,7 +66,9 @@ export default function createTrackingHandler(params: TrackingParams): TrackingH
           trackingQueue = [true, ...trackingQueue];
         }
       } else {
-        const match = text.match(params.tag);
+        const match = [...text.matchAll(new RegExp(params.tag, 'gi'))].find(
+          (match) => match.index + match[0].length === selection.start,
+        );
         if (match) {
           position = match.index ?? -1;
           trackingQueue = [true, ...trackingQueue];
